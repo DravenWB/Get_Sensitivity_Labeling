@@ -1,5 +1,5 @@
 # Microsoft PowerShell Scripting
-### Tenant Focused TroubleShooting, Management and Testing
+### Online Tenant Focused TroubleShooting, Management and Testing
 ![Powershell-1379505758](https://github.com/DravenWB/Microsoft_PowerShell_Scripts/assets/46582061/e94b0d82-69f7-4395-856c-209caa695f9d)
 
 ## Purpose
@@ -20,3 +20,5 @@ Similar to pull requests, any issues reported should be thoroughly researched an
 <sup>1. At this time. DoD tenants are not officially supported as their environments are often significantly more restricted. In addition, no current DoD test environments are available to me, thus, scripts used within those environments should be used with extreme caution. </Sup>
 
 <sup>2. It should be said that all scripts I write and place in this repository are tested and debugged live. I will not upload a script I do not have full confidence in. Regardless, it is highly recommended that you review a script thoroughly prior to running them to ensure you are fully aware of their functions. </sup>
+
+<sup>3. At this time, I don't support On-Prem PowerShell scripts as I am unfamiliar enough to not be confident in the scripts I write. I may reconsider this in the future though it is unlikely. </sup>

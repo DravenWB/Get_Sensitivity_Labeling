@@ -156,7 +156,7 @@ class InheritanceChange
 #Loop to cycle through each item and reset the context. Includes error handling.
 foreach ($Item in $ListItems)
 {
-    if ($Item.FieldValues.FileRef -match $RelativeFolder) #Check if file has the same server relative file path as those targeted.
+    if ($_.FieldValues.FileRef -match $RelativeFolder) #Check if file has the same server relative file path as those targeted.
         {
             try
             {

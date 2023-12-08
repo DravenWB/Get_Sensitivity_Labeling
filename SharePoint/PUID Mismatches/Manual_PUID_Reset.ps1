@@ -64,7 +64,7 @@ $ErrorView = [System.Management.Automation.ActionPreference]::ConciseView
 
 #Get operator current error action and set to stop.
 $OriginalErrorAction = $ErrorActionPreference
-$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
+$ErrorActionPreference = [System.Management.Automation.ActionPreference]::Continue
 
 ####################################################################################################################################################################################
 

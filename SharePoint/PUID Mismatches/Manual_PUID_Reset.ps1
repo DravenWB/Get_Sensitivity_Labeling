@@ -278,7 +278,9 @@ foreach ($Site in $SiteDirectory)
         $U_Error = " "
 
         #Check if the operator is currently a site collection admin for the current site being processed.
-        if ((Get-SPOUser -Site $Site.Url -LoginName $SharePointAdminUPN).IsSiteAdmin)
+        $SiteAdminCheck = (Get-SPOUser -Site $Site.Url -LoginName $SharePointAdminUPN -ErrorAction SilentlyContinue).IsSiteAdmin
+
+        if ($SiteAdminCheck)
             {
                 $AdminTime = Get-Date -Format "%R %Z"
                 $AdminCurrent = $true
@@ -326,7 +328,7 @@ foreach ($Site in $SiteDirectory)
                 }
 
         #Write data to instantiated class object for temporary storage and file output.
-        $DataTable += New-Object -TypeName OperationData -Property $([Ordered]@{
+        $DataTable = New-Object -TypeName OperationData -Property $([Ordered]@{
     
         Index = $IndexCounter
         Date = Get-Date -Format "%m/%d/%Y"
@@ -340,6 +342,11 @@ foreach ($Site in $SiteDirectory)
         UserErrors = $U_Error
         })
 
+        #Send the data table to the index.
+        $LoggingIndex += $DataTable
+
+        #Clear data table and increment counter for next site.
+        $DataTable = $null
         $IndexCounter++
     }
 

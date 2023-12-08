@@ -6,7 +6,6 @@
 #               user will no longer have access to them until they are added back to the locations, re-shared previously shared documents from that location, etc.
 #
 # Dependencies: + SharePoint Online PowerShell Module (Version check and installation command included in script.)
-#               + PowerShell v7 or greater.
 #
 # Before You Run: Important information to take into consideration before running this script! Please be sure to read these details in their entirety.
 #
@@ -69,14 +68,14 @@ $ErrorActionPreference = [System.Management.Automation.ActionPreference]::Stop
 
 ####################################################################################################################################################################################
 
-#Run check against PowerShell version and verify that it is version 7 or greater. If not, inform the user and exit the script.
+#Run check against PowerShell version and verify that it is version 5 or greater. If not, inform the user and exit the script.
 
 Write-Host "Now checking running PowerShell version..."
 Start-Sleep -Seconds 1
 
 $InstalledVersion = ($PSVersionTable.PSVersion).ToString()
 
-if ($InstalledVersion -ge '7')
+if ($InstalledVersion -ge '5')
     {
         Write-Host -ForegroundColor Green "Success! PowerShell version $InstalledVersion running."
         Start-Sleep -Seconds 1

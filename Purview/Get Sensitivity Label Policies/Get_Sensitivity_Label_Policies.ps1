@@ -116,7 +116,7 @@ Get-OMEConfiguration | Format-List
 Get-RMSTemplate -ResultSize Unlimited
 
 #Get all labeling policies
-Get-LabelPolicy | Format-Table
+Get-LabelPolicy | Format-List
 
 #Get all sensitivity labels for the organization
 Get-Label | Format-List

@@ -282,7 +282,7 @@ foreach ($Site in $SiteDirectory)
 
         if ($SiteAdminCheck)
             {
-                $AdminTime = Get-Date -Format "%R %Z"
+                $AdminTime = Get-Date -Format "HH:mm"
                 $AdminCurrent = $true
             }
 
@@ -299,14 +299,14 @@ foreach ($Site in $SiteDirectory)
                                 $A_Error = $_ 
                             }
 
-                    $AdminTime = Get-Date -Format "%R %Z"
+                    $AdminTime = Get-Date -Format "HH:mm"
                     $AdminCurrent = $false
                 }
         
         #Check user presence on the site being processed. If they exist, remove them. If not, move to the next item.
         if (Get-SPOUser -Site $Site.Url -LoginName $UserUPN)
             {
-                $UserTime = Get-Date -Format "%R %Z"
+                $UserTime = Get-Date -Format "HH:mm"
 
                 try
                     {
@@ -323,7 +323,7 @@ foreach ($Site in $SiteDirectory)
 
             else
                 {
-                    $UserTime = Get-Date -Format "%R %Z"
+                    $UserTime = Get-Date -Format "HH:mm"
                     $UserWasRemoved = $false
                 }
 
@@ -331,7 +331,7 @@ foreach ($Site in $SiteDirectory)
         $DataTable = New-Object -TypeName OperationData -Property $([Ordered]@{
     
         Index = $IndexCounter
-        Date = Get-Date -Format "%m/%d/%Y"
+        Date = Get-Date -Format "MM/dd/yyyy"
         AdminCheckTime = $AdminTime
         Location = $Site.Url
         OriginallyAdmin = $AdminCurrent
@@ -353,7 +353,7 @@ foreach ($Site in $SiteDirectory)
 ####################################################################################################################################################################################
 
 #Save script data to file.
-$SaveModifier = Get-Date -Format "%m/%d/%Y"
+$SaveModifier = Get-Date -Format "MM/dd/yyyy"
 
 do
     {
@@ -437,9 +437,14 @@ do
 #Resore original admin site permissions.
 foreach ($Entry in $LoggingIndex)
     {
-        if (-not($Entry.OriginallyAdmin))
+        if ($Entry.OriginallyAdmin)
             {
-                try
+                $Entry.AdminReverted = $false
+            }
+
+            else
+                {
+                    try
                     {
                         Set-SPOUser -Site $Entry.Location -LoginName $SharePointAdminUPN -IsSiteCollectionAdmin $false
                         $Entry.AdminReverted = $true
@@ -450,11 +455,6 @@ foreach ($Entry in $LoggingIndex)
                             $Entry.AdminReverted = $false
                             $Entry.AdminErrors = $Entry.AdminErrors + "Removal Error:" + $_
                         }
-            }
-
-            else
-                {
-                    $Error.AdminReverted = $false
                 }
     }
 

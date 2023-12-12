@@ -6,7 +6,7 @@
 
 ## Description
 
-This script is designed to reset the inheritance of items within a specific folder of a SharePoint Online document library. It makes heavy use of PnP.PowerShell in order to accomplish this but does so realtively successfully.
+This script is designed to reset the inheritance of items within a specific folder of a SharePoint Online document library. It makes heavy use of PnP.PowerShell in order to accomplish this but does so successfully in both testing and live environments.
 
 ### Functions
 - Reset's document inheritance to parent. (Most commonly the document library.)
@@ -20,8 +20,9 @@ This script is designed to reset the inheritance of items within a specific fold
 
 ## Limitations
 - At this time, the script gets all files and folders within a specific directory. To specify it further, you need to scope down the initial pull command to exclude folder types. This functionality may be added in the future.
-- Many of the user input properties intitially can be shortened for ease of use though this will take some additional time with string management that I simply don't have at this time.
+- Many of the user input properties intitially can be shortened for ease of use though this will take some additional time with string management that I simply don't have at this very moment.
 - Depending on the amount of items you will be pulling in, you may need a large amount of system RAM. There is memory clearing checks but that can only do so much.
+      - Current usage observed at about 1MB/200 Items.
 
 ## Documentation
 - [PnP.PowerShell](https://github.com/pnp/powershell)

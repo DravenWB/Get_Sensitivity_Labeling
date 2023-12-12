@@ -9,7 +9,7 @@
 This script is designed to reset the inheritance of items within a specific folder of a SharePoint Online document library. It makes heavy use of PnP.PowerShell in order to accomplish this but does so successfully in both testing and live environments.
 
 ### Functions
-- Reset's document inheritance to parent. (Most commonly the document library.)
+- Reset's document inheritance to parent. (Most commonly the document library / Parent Folder)
 - File output for review prior to operational execution.
 - File output report for post-execution records.
 - Light error handling.

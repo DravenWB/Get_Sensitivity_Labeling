@@ -125,7 +125,7 @@ Write-Host ""
 $RelativePath = Read-Host "Target"
 
 ####################################################################################################################################################################################
-<#
+
 #Connect to PnP Online and exit if it fails.
 Write-Host ""
 
@@ -138,7 +138,7 @@ try
                 Write-Host -ForegroundColor Red "There was an error connecting to PnP Online: $_"
                 Exit
             }
-#>
+
 ####################################################################################################################################################################################
 
 #Set error view and action for clean entry into the output file. Additionally gets the operator's current setting to change it back at script cleanup time. 

@@ -1,3 +1,8 @@
-# !!! This script is still in development and testing. Do not use. !!!
+# Inheritance Reset
 
-![322-1222511197yhmW-1187125751](https://github.com/DravenWB/Microsoft_PowerShell_Scripts/assets/46582061/f6c79d28-e124-412c-b3be-6ca888e835d4)
+## Description
+
+This script is designed to reset the inheritance of items within a specific folder of a SharePoint Online document library. It makes heavy use of PnP.PowerShell in order to accomplish this but does so realtively successfully.
+
+## 
+

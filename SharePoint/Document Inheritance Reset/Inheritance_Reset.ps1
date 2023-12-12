@@ -14,11 +14,13 @@
 #Operator risk acknowledgemenet initialization.
 $OperatorAcknowledgement = " "
 
+Write-Host ""
 Write-Host -ForegroundColor Yellow "Disclaimer: This script is not officially supported by Microsoft, its affiliates or partners."
 Write-Host -ForegroundColor Yellow "This script is provided as is and the responsibility of understanding the script's functions and operations falls upon those that may choose to run it."
 Write-Host -ForegroundColor Yellow "Positive or negative outcomes of this script may not receive future assistance as such."
 Write-Host -ForegroundColor Yellow ""
 Write-Host -ForegroundColor Yellow "To acknowledge the above terms and proceed with running the script, please enter the word > Accept < (Case Sensitive)."
+Write-Host ""
 
 $OperatorAcknowledgement = Read-Host "Acknowledgement"
 
@@ -97,6 +99,8 @@ Start-Sleep -Seconds 1
 Write-Host ""
 Write-Host "Please enter the URL of the SharePoint site you are seeking to re-inherit items on:"
 Write-Host "Ex: https://contoso.sharepoint.com/sites/SiteName"
+Write-Host "Ex: https://contoso.sharepoint.us/sites/SiteName"
+Write-Host ""
 
 $SiteURL = Read-Host "Site URL"
 
@@ -104,19 +108,24 @@ Write-Host ""
 Write-Host "Please enter the name of the document library or list you wish to re-inherit items in:"
 Write-Host "The name of the document library or list should be the plain text display name and not the one found in the URL."
 Write-Host "Example: Documents"
+Write-Host ""
 
 $ListName = Read-Host "Library"
 
 Write-Host ""
-Write-Host "Please enter the relative file path for the folder you are completing resets for. This is a logical path and not a URL path."
-Write-Host "Ex: /sites/Sitename/lists/Shared Documents/Folder Name"
-Write-Host "Note: The folder must start at /sites and include the /lists/ directory after the site name."
-Write-Host "Note: The library name must be presented as it does in the URL with spaces in place of %20."
+Write-Host "Please enter the file path for the folder you are completing resets for. This is a logical path and not a precise URL path."
+Write-Host "Ex: /sites/Sitename/Shared Documents/Folder Name/"
+Write-Host ""
+Write-HOst "Requirements:"
+Write-Host "  - It is important that you add a / at the end of the directory to avoid targetting the main library."
+Write-Host "  - The folder must start at /sites."
+Write-Host "  - The library name must be presented as it does in the URL with spaces in place of %20 as demonstrated above."
+Write-Host ""
 
 $RelativePath = Read-Host "Target"
 
 ####################################################################################################################################################################################
-
+<#
 #Connect to PnP Online and exit if it fails.
 Write-Host ""
 
@@ -129,7 +138,7 @@ try
                 Write-Host -ForegroundColor Red "There was an error connecting to PnP Online: $_"
                 Exit
             }
-
+#>
 ####################################################################################################################################################################################
 
 #Set error view and action for clean entry into the output file. Additionally gets the operator's current setting to change it back at script cleanup time. 
@@ -154,7 +163,7 @@ Write-Host -ForegroundColor Green "Now getting document index..."
 Start-Sleep -Seconds 1
 
 #Get all files from the library - In batches of 500
-$ListItems = Get-PnPListItem -List $ListName -PageSize 500 | Where {$_.FileSystemObjectType -eq "File"}
+$ListItems = Get-PnPListItem -List $ListName -PageSize 500 | Where {$_.FileSystemObjectType -eq "File" -or $_.FileSystemObjectType -eq "Folder"}
 
 $ProcessingIndex = @() #Defines index to store filtered objects based on file path for processing.
 
@@ -174,7 +183,7 @@ foreach ($Item in $ListItems)
     Write-Progress -Activity "Now Filtering SharePoint Files for Reset..." -Status "$ProgressPercent% Complete" -PercentComplete $ProgressPercent
 
     #Sets a variable to the relative path value of the currently processed item.
-    $FilterObject = ($Item.FieldValues.FileDirRef).ToString()
+    $FilterObject = ($Item.FieldValues.FileRef).ToString()
 
     #Checks the relative path to confirm if it is a match (including sub-directories/files).
     if ($FilterObject.StartsWith($RelativePath))
@@ -243,7 +252,7 @@ do
                     Start-Sleep -Seconds 2 #Gives operator time to read message.
 
                     $ReviewIndex = @() #Initialize to save formatted objects.
-                    $ReviewCounter = '0' #Initialize counter for progress bar and item indexing.
+                    $ReviewCounter = 0 #Initialize counter for progress bar and item indexing.
 
                     class ReviewData #Initialize class for data output.
                     {
@@ -259,9 +268,12 @@ do
                     #Cycle through each object filtered for processing, details for output in CSV and send to index.
                     foreach ($ReviewItem in $ProcessingIndex)
                         {
+                            $ProgressPercent = ($ReviewCounter / $ProcessingIndex.Count) * 10 #Calculate display percentage.
+                            Write-Progress -Activity "Now formatting review data..." -Status "$ProgressPercent% Complete" -PercentComplete $ProgressPercent
+
                             $DataTable = New-Object -TypeName ReviewData -Property $([Ordered]@{
     
-                            Index = $ReviewCounter
+                            Index = $ReviewCounter + 1
                             Date = Get-Date -Format "MM/dd/yyyy"
                             ItemType = $ReviewItem.FileSystemObjectType
                             Name = $ReviewItem.FieldValues.FileLeafRef
@@ -271,7 +283,7 @@ do
                             })
 
                             $ReviewIndex += $DataTable
-
+                            $ReviewCounter++
                             $DataTable = $null #Clear current item for next use.
                         }
 
@@ -286,13 +298,13 @@ do
 
                         catch #If file fails to save, append time for filename conflicts.
                             {
-                                $DateModifier = Get-Date -Format "HH:mm"
 
                                 try
                                     {
-                                        $ReviewIndex | Export-Csv -Path "~\Desktop\File_Reinheritance_Review_$DateModifier.csv" -NoClobber
-                                        Write-Host -ForegroundColor Yellow "A file with the same name was found on your desktop so today's date was added."
-                                        Write-Host -ForegroundColor Green "The file was saved to the desktop as: > File_Reinheritance_Review_$DateModifier.csv <"
+
+                                        $ReviewIndex | Export-Csv -Path "~\Desktop\File_Reinheritance_Review_New.csv" -NoClobber
+                                        Write-Host -ForegroundColor Yellow "A file with the same name was found on your desktop so the name was modified."
+                                        Write-Host -ForegroundColor Green "The file was saved to the desktop as: > File_Reinheritance_Review_New.csv <"
                                         Read-host -Prompt "Enter any key to continue" #Makes the script wait till the user is ready to continue.
                                     }
 
@@ -305,19 +317,20 @@ do
                     
                     $ReviewIndex = $null #Clear review index memory upon completion.
                     $DataTable = $null #Clear data table memory for next use.
+                    $ProgressPercent = $null #Clear value for next use.
                 }
 
                 '4' #Stop and exit the script completely without making any changes.
                 {
                     Write-Host -ForegroundColor Green "Now exiting the script..."
-                    Start-Sleep -Seconds '1'
+                    Start-Sleep -Seconds 1
                     Write-Host -ForegroundColor Green "Clearing primary script used memory..."
 
                     $ProcessingIndex = $null
                     $ReviewIndex = $null
 
                     Write-Host -ForegroundColor Green "Have a wonderful day! :)"
-                    Start-Sleep -Seconds '1'
+                    Start-Sleep -Seconds 1
                     Exit
                 }
 
@@ -330,8 +343,9 @@ do
 #Run inheritance reset.
 
 #Inform the operator.
+Write-Host ""
 Write-Host -ForegroundColor Green "Now proceeding to execution of file/folder inheritance within: $RelativePath"
-Start-Sleep -Seconds '1'
+Start-Sleep -Seconds 1
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -367,6 +381,7 @@ foreach($ProcessingItem in $ProcessingIndex)
             $Context.ExecuteQuery() #Command to execute item inheritance reset.
 
             $ItemName = $ProcessingItem.FieldValues.FileLeafRef #Used to output name of item to let the operator know it was processed.
+            Write-Host ""
             Write-Host -ForegroundColor Green "$ItemName Role inheritance reset"
 
             $ResetCheck = $true #Sets variable for output if successful.
@@ -389,13 +404,16 @@ foreach($ProcessingItem in $ProcessingIndex)
         Date = $ProcessingDate
         Time = Get-Date -Format "HH:mm"
         FileName = $ItemName
-        Location = $Item.FieldValues.FileDirRef
+        Location = $ProcessingItem.FieldValues.FileDirRef
         Inheritance_Reset = $ResetCheck
         Errors = $XError
         })
 
         #Send the data table to the index.
         $LoggingIndex += $DataTable
+
+        #Increment counter for progress bar and indexing.
+        $ProcessingCounter++
 
         #Clear variables for next use to ensure no duplicate values from previous items are used.
         $DataTable = $null
@@ -407,18 +425,19 @@ foreach($ProcessingItem in $ProcessingIndex)
 ####################################################################################################################################################################################
 
 #Save script data to file.
-$SaveModifier = Get-Date -Format "MM/dd/yyy"
 
 do
     {
         Write-Host "This portion of the script has been placed into a loop in case saving the file fails."
-        Write-Host "Save defaults to the file name Inheritance_Reset_Log.csv on the desktop. If it fails, it will try to append the date as a backup."
+        Write-Host ""
+        Write-Host "Save defaults to the file name Inheritance_Reset_Log.csv on the desktop. If it fails, it will modify the name as a backup."
         Write-Host "Once the script completes, changes made that have been stored in memory will be lost."
+        Write-Host ""
         Write-Host "Please ensure you have the data you need before exiting."
         Write-Host " "
-        Write-Host "1. Attempt to save file with default settings."
-        Write-Host "2. Manually input location and filename for saving."
-        Write-Host "3. Complete cleanup and Exit."
+        Write-Host "1. Attempt to save file."
+        Write-Host "2. Complete cleanup and Exit."
+        Write-Host ""
 
         $SaveSelection = Read-Host "Selection"
 
@@ -439,58 +458,16 @@ do
                                 Write-Host -ForegroundColor Yellow "Saving the file failed. Now attempting to add modifier and try again."
                                 Start-Sleep -Seconds 2
 
-                                $LoggingIndex | Export-Csv -Path "~\Desktop\Inheritance_Reset_Log$SaveModifier.csv" -NoClobber
+                                $LoggingIndex | Export-Csv -Path "~\Desktop\Inheritance_Reset_Log_New.csv" -NoClobber
                                 Write-Host -ForegroundColor Green "The file has successfully been saved to the following location:"
-                                Write-Host -ForegroundColor Green "> ~\Desktop\Inheritance_Reset_Log$SaveModifier.csv <"
-                                Read-host -Prompt "Enter any key to continue" #Makes the script wait till the user is ready to continue.
-                            }
-                }
-                
-                '2' #Manually input location and filename for saving.
-                {
-                    Write-Host "Please enter a location to save your file."
-                    Write-Host "EX: ~\Documents\"
-                    Write-Host "EX: C:\Users\Username\Documents\Folder\"
-
-                    $SaveLocation = Read-Host "Save Location"
-
-                    Write-Host " "
-
-                    Write-Host "Please enter a name for your file."
-                    Write-Host "EX: Site Changes"
-
-                    $SaveName = Read-Host "Save File Name"
-
-                    try
-                        {
-                            $LoggingIndex | Export-Csv -Path $SaveLocation+$SaveName.csv -NoClobber
-                            Write-Host -ForegroundColor Green "The file has successfully been saved to the following location:"
-
-                            $AlternateSave1 = $SaveLocation+$SaveName
-
-                            Write-Host -ForegroundColor Green "> $AlternateSave1.csv <"
-                            Read-host -Prompt "Enter any key to continue" #Makes the script wait till the user is ready to continue.
-                        }
-
-                        catch
-                            {
-                                Write-Host -ForegroundColor Yellow "Saving the file failed. Now attempting to add modifier and try again."
-                                Start-Sleep -Seconds 3
-
-                                $AlternateSave2 = $SaveLocation+$SaveName+$SaveModifier
-
-                                $LoggingIndex | Export-Csv -Path $AlternateSave2.csv -NoClobber
-
-                                Write-Host -ForegroundColor Green "The file has successfully been saved to the following location:"
-                                
-                                Write-Host -ForegroundColor Green "> $AlternateSave2.csv <"
+                                Write-Host -ForegroundColor Green "> ~\Desktop\Inheritance_Reset_Log_New.csv <"
                                 Read-host -Prompt "Enter any key to continue" #Makes the script wait till the user is ready to continue.
                             }
                 }
             }
     }
 
-    until($SaveSelection -eq '3')
+    until($SaveSelection -eq '2')
 
 ####################################################################################################################################################################################
 #Clean up.

@@ -137,22 +137,25 @@ Write-Host " "
 #Get the admin center URL.
 Write-Host "Please enter the URL for your SharePoint Admin Center for connecting."
 Write-Host "Ex: https://contoso-admin.sharepoint.com"
+Write-Host " "
 $SharePointAdminURL = Read-Host "URL"
 
 Write-Host " "
 
 #Get the admin UPN.
 Write-Host "Please enter your SharePoint Administrator email for connection and temporary permissions assignment."
-Write-Host "Ex: first.last@tenant.com<mailto:first.last@tenant.com>"
+Write-Host "Commercial Example: UPN@tenant.com"
+Write-Host " "
 $SharePointAdminUPN = Read-Host "Email"
 
 Write-Host " "
 
 #Get the UPN to run the UIL PUID mismatch for.
 Write-Host "Please enter the email of the user to run a PUID mismatch for."
+Write-Host " "
 $UserUPN = Read-Host "User UPN"
 
-####################################################################################################################################################################################
+<####################################################################################################################################################################################
 
 Write-Host " "
 
@@ -180,7 +183,7 @@ try
                     }
         }
 
-####################################################################################################################################################################################
+####################################################################################################################################################################################>
 
 Write-Host " "
 
@@ -190,7 +193,7 @@ Start-Sleep -Seconds 1
 #Gathers all sites in the tenant to include OneDrive accounts. Completed early to give operator site count in the next section's disclaimer readout.
 try
     {
-        $SiteDirectory = Get-SPOSite -Limit All -IncludePersonalSite $true
+        $SiteDirectory = Get-SPOSite -Limit All -IncludePersonalSite $true | Sort-Object -Property Url
 
         Write-Host " "
         Write-Host -ForegroundColor Green "Successfully gathered SharePoint site information!"
@@ -209,18 +212,18 @@ Write-Host " "
 
 #Inform operator how the operation works and provide important considerations.
 Write-Host -ForegroundColor Red " << IMPORTANT >>"
-Write-Host -ForegroundColor Yellow "+ PUID mismatch is completed by removing the user from the User Information List."
+Write-Host -ForegroundColor Yellow "+ PUID mismatch correction is completed by removing the user from the User Information List."
 Write-Host -ForegroundColor Yellow "+ As such, all permissions for the particular user on every site will be removed."
-Write-Host -ForegroundColor Yellow "+ This script does not make ID mismatch checks but runs manually for all sites."
+Write-Host -ForegroundColor Yellow "+ This script does not make ID mismatch checks but instead, runs manually for all sites."
 Write-Host " "
 Write-Host -ForegroundColor Yellow "+ The command Get-SPOUser requires that you are a sharepoint site administrator of every site you want to make changes for"
 Write-Host -ForegroundColor Yellow "  to check for user presence."
 Write-Host -ForegroundColor Yellow "+ This script checks if you are an active SharePoint site admin for the sites being processed before assigning permissions."
 Write-Host -ForegroundColor Yellow "+ A check is also in place to restore original site collection administrator assignments for all sites processed at the end."
 Write-Host " "
-Write-Host "This operation will be run for the user " $UserUPN " on " $SiteDirectory.Count "sites and OneDrive locations combined."
+Write-Host "This operation will be run for the user >" $UserUPN "< on" $SiteDirectory.Count "site locations and OneDrive locations combined."
 Write-Host " "
-Write-Host "To confirm that you would like to proceed, please enter the word > Confirm <."
+Write-Host "To confirm that you would like to proceed, please enter the word > Confirm < (Case Sensitive)."
 Write-Host " "
 
 #Get Confirmation that the operator is ready to proceed with the operation after being provided with details on currently configured functions.
@@ -260,35 +263,49 @@ class OperationData
 $LoggingIndex = @() #Index to store data for operational logging and file output.
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-$IndexCounter = 1 #Initialize counter for index numbering.
+$IndexCounter = 0 #Initialize counter for index numbering.
 
 Write-Host "Now processing all site collection changes for $UserUPN."
-Write-Host "This may take an extended period of time dependent on the size of your Tenant SharePoint..."
+Write-Host "This may take an extended period of time dependent on the size of your tenant's SharePoint configuration..."
 Start-Sleep -Seconds 3
 
 #For each site in the tenant...
 foreach ($Site in $SiteDirectory)
     {
         #Display progress bar for PUID mismatch resets.
-        $ProgressPercent = ($IndexCounter / $SiteDirectory.Count) * 10
-        Write-Progress -Activity "Manual PUID Mismatch Resets" -Status "$ProgressPercent% Complete:" -PercentComplete $ProgressPercent
+        $ProgressPercent = ($IndexCounter / $SiteDirectory.Count) * 100
+        $ProgressPercet = $ProgressPercent.ToString("#.##")
+        Write-Progress -Activity "Manual PUID Reset Processing..." -Status "$ProgressPercent% Complete:" -PercentComplete $ProgressPercent
 
         #Initialize errors to blank space to ensure proper listing + clearing of old data if available.
         $A_Error = " "
         $U_Error = " "
 
         #Check if the operator is currently a site collection admin for the current site being processed.
-        $SiteAdminCheck = (Get-SPOUser -Site $Site.Url -LoginName $SharePointAdminUPN -ErrorAction SilentlyContinue).IsSiteAdmin
+        try
+            {
+                $Test = (Get-SPOUser -Site $Site.Url -LoginName $SharePointAdminUPN -ErrorAction SilentlyContinue).IsSiteAdmin
+                $SiteCheck = $true
+                $Test = $null
+            }
 
-        if ($SiteAdminCheck)
+            catch
+                {
+                    $SiteCheck = $false
+                }
+
+        #If they are, set current admin variable to true. If not, add them temporarily as a site collection admin.
+        if($SiteCheck)
             {
                 $AdminTime = Get-Date -Format "HH:mm"
                 $AdminCurrent = $true
             }
 
-            #If operator is not a site collection administrator for the site being processed, add them in order to run changes for the user.
             else
                 {
+                    $AdminTime = Get-Date -Format "HH:mm"
+                    $AdminCurrent = $false
+
                     try
                         {
                             Set-SPOUser -Site $Site.Url -LoginName $SharePointAdminUPN -IsSiteCollectionAdmin $true
@@ -296,29 +313,27 @@ foreach ($Site in $SiteDirectory)
 
                         catch
                             {
-                                $A_Error = $_ 
+                                $AdminCurrent = $false
+                                $A_Error = $_
                             }
-
-                    $AdminTime = Get-Date -Format "HH:mm"
-                    $AdminCurrent = $false
                 }
         
         #Check user presence on the site being processed. If they exist, remove them. If not, move to the next item.
-        if (Get-SPOUser -Site $Site.Url -LoginName $UserUPN)
+        if (Get-SPOUser -Site $Site.Url | Where {$_.LoginName -eq $UserUPN})
             {
                 $UserTime = Get-Date -Format "HH:mm"
 
                 try
                     {
                         Remove-SPOUser -Site $Site.Url -LoginName $UserUPN
+                        $UserWasRemoved = $true
                     }
 
                     catch
                         {
+                            $UserWasRemoved = $false
                             $U_Error = $_
                         }
-
-                $UserWasRemoved = $true
             }
 
             else
@@ -330,11 +345,12 @@ foreach ($Site in $SiteDirectory)
         #Write data to instantiated class object for temporary storage and file output.
         $DataTable = New-Object -TypeName OperationData -Property $([Ordered]@{
     
-        Index = $IndexCounter
+        Index = $IndexCounter + 1
         Date = Get-Date -Format "MM/dd/yyyy"
         AdminCheckTime = $AdminTime
         Location = $Site.Url
         OriginallyAdmin = $AdminCurrent
+        AdminReverted = "" #Placeholder.
         UserCheckTime = $UserTime
         UserUPN = $UserUPN
         UserRemoved = $UserWasRemoved
@@ -351,112 +367,102 @@ foreach ($Site in $SiteDirectory)
     }
 
 ####################################################################################################################################################################################
+#Cleanup admin permissions.
+
+Write-Host -ForegroundColor Green "User removal completed!"
+Start-Sleep -Seconds 2
+Write-Host ""
+Write-Host -ForegroundColor Green "Now reverting administrator permissions..."
+
+#For each processed item...
+foreach ($Entry in $LoggingIndex)
+    {
+        #If the operator was not originally an admin and there were no errors, reset permissions to original
+        if ($Entry.OriginallyAdmin -eq $false -and $Entry.AdminErrors -eq " ")
+            {
+                try
+                {
+                    Set-SPOUser -Site $Entry.Location -LoginName $SharePointAdminUPN -IsSiteCollectionAdmin $false
+                    $Entry.AdminReverted = $true
+                }
+
+                #If operation fails, set reverted variable to false and create output to error admin error variable.
+                catch
+                    {
+                        $Entry.AdminReverted = $false
+
+                        #Checks if the admin error is blank or if it contains information. If it is blank, set error data.
+                        if ($Entry.AdminErrors -like " ")
+                            {
+                                $Entry.AdminErrors = "Removal Error: $_"
+                            }
+
+                            #If admin error is populated, append error to existing data.
+                            else
+                                {
+                                    $Entry.AdminErrors = $Entry.AdminErrors + (" Removal Error:" + $_)
+                                }
+                    }                
+            }
+
+            #If the operator was not originally an admin and there were errors when checked, set reverted to false and continue.
+            else
+                {
+                    $Entry.AdminReverted = $false
+                }
+    }
+
+Write-Host ""
+
+####################################################################################################################################################################################
 
 #Save script data to file.
-$SaveModifier = Get-Date -Format "MM/dd/yyyy"
 
 do
     {
         Write-Host "This portion of the script has been placed into a loop in case saving the file fails."
-        Write-Host "Save defaults to the file name PUID_Mismatch_Log.csv on the desktop. If it fails, it will try to append the date as a backup."
+        Write-Host ""
+        Write-Host "Save defaults to the file name PUID_Mismatch_Log.csv on the desktop. If it fails, it will modify the name as a backup."
         Write-Host "Once the script completes, changes made that have been stored in memory will be lost."
-        Write-Host "Please ensure you have the data you need before continuing."
+        Write-Host ""
+        Write-Host "Please ensure you have the data you need before exiting."
         Write-Host " "
-        Write-Host "1. Attempt to save file with default settings."
-        Write-Host "2. Manually input location and filename for saving."
-        Write-Host "3. Complete cleanup and Exit"
+        Write-Host "1. Save processed changes to file."
+        Write-Host "2. Complete cleanup and Exit."
+        Write-Host ""
 
         $SaveSelection = Read-Host "Selection"
 
         switch($SaveSelection)
             {
-                '1'
+                '1' #Attempt to save file with default settings.
                 {
                     try
                         {
-                            $LoggingIndex | Export-Csv -Path ~\Desktop\PUID_Mismatch_Log.csv -NoClobber
+                            $LoggingIndex | Export-Csv -Path "~\Desktop\Inheritance_Reset_Log.csv" -NoClobber
                             Write-Host -ForegroundColor Green "The file has successfully been saved to the following location:"
-                            Write-Host -ForegroundColor Green "> ~\Desktop\PUID_Mismatch_Log.csv <"
+                            Write-Host -ForegroundColor Green "> ~\Desktop\Inheritance_Reset_Log.csv <"
+                            Read-host -Prompt "Enter any key to continue" #Makes the script wait till the user is ready to continue.
                         }
 
                         catch
                             {
                                 Write-Host -ForegroundColor Yellow "Saving the file failed. Now attempting to add modifier and try again."
-                                Start-Sleep -Seconds 3
+                                Start-Sleep -Seconds 1
 
-                                $LoggingIndex | Export-Csv -Path ~\Desktop\PUID_Mismatch_Log$SaveModifier.csv -NoClobber 
+                                $LoggingIndex | Export-Csv -Path "~\Desktop\Inheritance_Reset_Log_New.csv" -NoClobber
+                                Write-Host -ForegroundColor Green "The file has successfully been saved to the following location:"
+                                Write-Host -ForegroundColor Green "> ~\Desktop\Inheritance_Reset_Log_New.csv <"
+                                Read-host -Prompt "Enter any key to continue" #Makes the script wait till the user is ready to continue.
                             }
-                }
-                
-                '2'
-                {
-                    Write-Host "Please enter a location to save your file."
-                    Write-Host "EX: ~\Documents\"
-                    Write-Host "EX: C:\Users\Username\Documents\Folder\"
-
-                    $SaveLocation = Read-Host "Save Location"
-
-                    Write-Host " "
-
-                    Write-Host "Please enter a name for your file."
-                    Write-Host "EX: Site Changes"
-
-                    $SaveName = Read-Host "Save File Name"
-
-                    try
-                        {
-                            $LoggingIndex | Export-Csv -Path $SaveLocation+$SaveName.csv -NoClobber
-                            Write-Host -ForegroundColor Green "The file has successfully been saved to the following location:"
-                            Write-Host -ForegroundColor Green "> $SaveLocation+$SaveName.csv <"
-                        }
-
-                        catch
-                            {
-                                Write-Host -ForegroundColor Yellow "Saving the file failed. Now attempting to add modifier and try again."
-                                Start-Sleep -Seconds 3
-
-                                $LoggingIndex | Export-Csv -Path $SaveLocation+$SaveName+$SaveModifier.csv -NoClobber
-                            }
-                }
-
-                '3'
-                {
-                    Write-Host -ForegroundColor Green "Now proceeding with admin credential correction and cleanup."
-                    Write-Host -ForegroundColor Yellow "This may take some time depending on how many changes were required."
-                    Start-Sleep -Seconds 3
                 }
             }
     }
 
-    until($SaveSelection -eq '3')
+    until($SaveSelection -eq '2')
 
 ####################################################################################################################################################################################
-
 #Script cleanup.
-
-#Resore original admin site permissions.
-foreach ($Entry in $LoggingIndex)
-    {
-        if ($Entry.OriginallyAdmin)
-            {
-                $Entry.AdminReverted = $false
-            }
-
-            else
-                {
-                    try
-                    {
-                        Set-SPOUser -Site $Entry.Location -LoginName $SharePointAdminUPN -IsSiteCollectionAdmin $false
-                        $Entry.AdminReverted = $true
-                    }
-
-                    catch
-                        {
-                            $Entry.AdminReverted = $false
-                            $Entry.AdminErrors = $Entry.AdminErrors + "Removal Error:" + $_
-                        }
-                }
-    }
 
 #Release majority memory usage.
 $LoggingIndex = $null
@@ -468,5 +474,4 @@ $ErrorActionPreference = [System.Management.Automation.ActionPreference]::$Origi
 ####################################################################################################################################################################################
 
 Write-Host -ForegroundColor Green "Script now complete! Have a wonderful day! :)"
-Start-Sleep -Seconds 3
 Exit

@@ -8,7 +8,7 @@ This script was created to handle situations in which a user ID is not matching,
 
 # Current Functions
 - Remove a user from all sites in all locations to include OneDrives which will then allow for a fresh pull of the user ID when something is Shared.
-- Print a report with times, dates, locations errors (if any) and whether they were cleared from the location or not. 
+- Print a report with times, dates, locations, errors (if any) and whether they were cleared from the location or not. 
 
 ## Disclaimer / Notice
 - This script is what I would consider Beta. It has been proven and tested as working but may require minor polishing.

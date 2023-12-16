@@ -1,3 +1,7 @@
+# Notice
+# Script requires re-validation by developer to ensure recent changes have not created issues for a normally working script. It is not recommended for use at this time.
+## Re-validation includes the re-adding of users to original locations. Feature scope TBD.
+
 # PUID Mismatches
 ### Beta
 

@@ -23,6 +23,7 @@ This script is designed to reset the inheritance of items within a specific fold
 - Many of the user input properties intitially can be shortened for ease of use though this will take some additional time with string management that I simply don't have at this very moment.
 - Depending on the amount of items you will be pulling in, you may need a large amount of system RAM. There is memory clearing checks but that can only do so much.
    - Current usage observed at about 1MB/200 Items.
+- This script can handle a maximum of 5,000,000 items total due to observed, potential, technical limitations. 
 
 ## Documentation
 - [PnP.PowerShell](https://github.com/pnp/powershell)

@@ -11,18 +11,21 @@ This script is designed to reset the inheritance of items within a specific fold
 ### Functions
 - Reset's document inheritance to parent. (Most commonly the document library / Parent Folder)
 - File output for review prior to operational execution.
+- Document count confirmation capabilities prior to runtime.
 - File output report for post-execution records.
-- Light error handling.
+   - Amount of records per file configureable. 
+- Error handling.
+- Includes folder specification for reset.
 
 ## Dependencies
 - Due to PnP's recent updates, the module requires PowerShell 7 or greater.
    - The script includes a check to both review current installation and install the module if missing.
+- Dependencies directory required.
+   - Contains several required .ps1 files.
+   - Must be in same directory relationship to function. (Directory error handling and better structuring planned.)
+   - Recommended to download the entire "Document Inheritance Reset" folder to operate.
 
 ## Limitations
-- At this time, the script gets all files and folders within a specific directory. To specify it further, you need to scope down the initial pull command to exclude folder types. This functionality may be added in the future.
-- Many of the user input properties intitially can be shortened for ease of use though this will take some additional time with string management that I simply don't have at this very moment.
-- Depending on the amount of items you will be pulling in, you may need a large amount of system RAM. There is memory clearing checks but that can only do so much.
-   - Current usage observed at about 1MB/200 Items.
 - This script can handle a maximum of 5,000,000 items total due to observed, potential, technical limitations. 
 
 ## Documentation
@@ -34,3 +37,4 @@ This script is designed to reset the inheritance of items within a specific fold
 - [Installing PowerShell on Windows - PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.4#installing-the-msi-package)
 - [About Classes - PowerShell | Microsoft Learn](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_classes?view=powershell-7.4)
 - [Everything You Wanted to Know About Exceptions - PowerShell | Microsoft Learn](https://learn.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-exceptions?view=powershell-7.4)
+- [Query Schema in CAML | Microsoft Learn](https://learn.microsoft.com/en-us/sharepoint/dev/schema/query-schema)

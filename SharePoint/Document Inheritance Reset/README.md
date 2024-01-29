@@ -1,4 +1,4 @@
-# Document Library Inheritance Reset
+# Document Library Inheritance Reset | CURRENTLY UNTESTED
 
 ![shutterstock_1476215399-4226488549](https://github.com/DravenWB/Microsoft_PowerShell_Scripts/assets/46582061/f3c93143-35ad-45ab-931f-3043d83bffdb)
 

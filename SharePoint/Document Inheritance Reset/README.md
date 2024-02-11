@@ -26,7 +26,8 @@ This script is designed to reset the inheritance of items within a specific fold
    - Recommended to download the entire "Document Inheritance Reset" folder to operate.
 
 ## Limitations
-- This script can handle a maximum of 5,000,000 items total due to observed, potential, technical limitations. 
+- This scripts limitations are implied upon the system it is run on. As CAML does not match PnP Queries in item counts, the full amount total needs to be pulled via PnP.
+   - This is reduced by only pulling minor data per file for the total count and then handled in batches for the processing but is still fairly resource intensive.
 
 ## Documentation
 - [PnP.PowerShell](https://github.com/pnp/powershell)

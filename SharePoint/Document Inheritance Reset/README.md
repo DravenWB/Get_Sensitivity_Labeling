@@ -15,7 +15,6 @@ This script is designed to reset the inheritance of items within a specific fold
 - File output report for post-execution records.
    - Amount of records per file configureable. 
 - Error handling.
-- Includes folder specification for reset.
 
 ## Dependencies
 - Due to PnP's recent updates, the module requires PowerShell 7 or greater.
@@ -28,6 +27,7 @@ This script is designed to reset the inheritance of items within a specific fold
 ## Limitations
 - This scripts limitations are implied upon the system it is run on. As CAML does not match PnP Queries in item counts, the full amount total needs to be pulled via PnP.
    - This is reduced by only pulling minor data per file for the total count and then handled in batches for the processing but is still fairly resource intensive.
+- The script is currently only able to be run for full document libraries and cannot target specific folders. While the script originally had this functionality, it appears to have broken with an update to a dependency but may be re-added in the future.
 
 ## Documentation
 - [PnP.PowerShell](https://github.com/pnp/powershell)

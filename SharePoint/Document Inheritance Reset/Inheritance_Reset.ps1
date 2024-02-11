@@ -14,7 +14,6 @@
 #Get dependent function modules.
 . .\Dependencies\Operator_Acknowledgement.ps1
 . .\Dependencies\PS7_Dependency_Check.ps1
-. .\Dependencies\Error_Handling_Config.ps1
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
@@ -33,19 +32,15 @@ Write-Host "Please enter the URL of the site you are targetting:"
 Write-Host "Example: https://contoso.sharepoint.com/sites/SITENAME/"
 Write-Host "NOTE: If the name contains spaces, ensure you place a quotation mark at the beginning and end to ensure accurate input."
 
-$FullURL = Read-Host "Site URL"
+$SiteURL = Read-Host "Site URL"
 
-#Removes quotations and ensures URL ends with a /
-if ($FullURL.StartsWith('"'))
-    {
-        $FullURL = ($FullURL -split '"')[1] #If the string starts with a quotation, split it and separate the URL.
-        if (-not $FullURL.EndsWith('/')){$FullURL += '/'}
-    }
-    elseif ($FullURL.EndsWith('"')) #If the string does not start with a quotation but ends in one, split it and select the URL.
-        {
-            $FullURL = ($FullURL -split '"')[0]
-            if (-not $FullURL.EndsWith('/')){$FullURL += '/'}
-        }
+#Removes quotations if present.
+if ($SiteURL.StartsWith('"') -or $SiteURL.EndsWith('"'))
+    {$SiteURL = ($SiteURL.Trim('"'))}
+
+#Ensure the URL is ended with a /
+if (-not $SiteURL.EndsWith('/'))
+    {$SiteURL += '/'}
 
 Write-Host "Please enter the name of the list or library:"
 Write-Host "Example: Documents"
@@ -54,58 +49,14 @@ Write-Host "NOTE: If the name contains spaces, ensure you place a quotation mark
 
 $ListName = Read-Host "List/Library Name"
 
-#Removes quotations and ensures URL ends with a /
-if ($ListName.StartsWith('"'))
-    {
-        $ListName = ($ListName -split '"')[1] #If the string starts with a quotation, split it and separate the URL.
-    }
-    elseif ($ListName.EndsWith('"')) #If the string does not start with a quotation but ends in one, split it and select the URL.
-        {
-            $ListName = ($ListName -split '"')[0]
-        }
-
-<####################################################################################################################################################################################
-#Module requires work. Current inputs incorrect and target the root site which can be highly problematic. Requires additional troubleshooting.
-
-#Set Variables via operator input.
-
-Write-Host ""
-Write-Host "Please enter the full Logical URL of your target document library (or library folder)."
-Write-Host "Be sure to include quotation marks at the start and end of your URL as spaces can be problematic."
-Write-Host "This URL is part logical and is not a complete literal URL copied from the address bar."
-Write-Host "Ex: https://contoso.sharepoint.com/sites/SiteName/Shared Documents/Folder/SubFolder/"
-Write-Host "Ex: https://contoso.sharepoint.us/sites/SiteName/Shared Documents/"
-Write-Host ""
-
-$FullURL = Read-Host "Site Logical URL" #Get full logical URL from user.
-
-#Handle input with quotations.
-if ($FullURL.StartsWith('"'))
-    {
-        $FullURL = ($FullURL -split '"')[1] #If the string starts with a quotation, split it and separate the URL.
-    }
-    elseif ($FullURL.EndsWith('"')) #If the string does not start with a quotation but ends in one, split it and select the URL.
-        {
-            $FullURL = ($FullURL -split '"')[0]
-        }
-
-$UrlDelimit = $FullURL -split '/' #Set delimiter and split the URL.
-
-#Grab the tenant URL, Library and relative path.
-$RawTenant = $UrlDelimit[2] #Get the tenant URL and append necessary characters for connection.
-$ListName = $UrlDelimit[5] #Get the list/library name from the target relative URL.
-$RelativePath = '/' + [string]::Join('/', $UrlDelimit[3..($UrlDelimit.Length - 2)]) #Get the relative path for filtering.
-
-#Modify the raw tenant to a full URL for connection.
-$SiteURL = "https://$RawTenant"
-
-#Ensure that the relative URL ends with '/' to prevent whole library targeting.
-if (-not $RelativePath.EndsWith('/')){$RelativePath += '/'}
+#If the string starts or ends with quotations, remove them.
+if ($ListName.StartsWith('"') -or $ListName.EndsWith('"'))
+    {$ListName = ($ListName.Trim('"'))}
 
 ####################################################################################################################################################################################>
 #Connect to PnP Online and exit if it fails. If succeeds, get the context and proceed.
 Write-Host ""
-try {Connect-PnPOnline -Url $FullURL -UseWebLogin}
+try {Connect-PnPOnline -Url $SiteURL -UseWebLogin}
 
     catch 
         {
@@ -151,6 +102,12 @@ do
                     $LoggingPath = Read-Host "Path"
                     Write-Host "" #Spacer to keep details readable.
 
+                        #Ensure that the logging path has a / at the end.
+                        if (-not $LoggingPath.EndsWith('/'))
+                            {
+                                $LoggingPath += '/'
+                            }
+
                     #Get total number of items to process.
                     Write-Host "How many items would you like to save per .csv file?"
                     Write-Host "Recommended: No more than 10,000 items."
@@ -158,20 +115,6 @@ do
                     Write-Host "" #Spacer to keep details readable.
 
                     [int]$LoggingCount = Read-Host "Amount"
-
-                    Write-Host "" #Spacer to keep details readable.
-
-                    #Ensure that the logging path has a / at the end.
-                    if (-not $LoggingPath.EndsWith('/'))
-                        {
-                            $LoggingPath += '/'
-                        }
-
-                    #Ensure that the logging file name ends in .csv
-                    if (-not $LoggingFileName.EndsWith('.csv'))
-                        {
-                            $LoggingFileName += '.csv'
-                        }
 
                     Write-Host "" #Spacer to keep details readable.
                 }
@@ -183,6 +126,10 @@ do
                     Write-Host "Log entries per file: $LoggingCount"
 
                     Write-Host "" #Spacer to keep details readable.
+
+                    #Prompt operator to press a key to continue.
+                    Write-Host "Press Enter to continue ..."
+                    $null = Read-Host
                 }
             
                 '3'
@@ -192,7 +139,6 @@ do
                     $LoggingCount = $null
 
                     Write-Host -ForegroundColor Green "Logging parameters cleared!"
-
                     Write-Host "" #Spacer to keep details readable.
                 }
             
@@ -213,8 +159,8 @@ do
                     $LoggingPath = $null
                     $LoggingCount = $null
 
-                    Start-Sleep -Seconds 2
-                    $Exit = $Exit
+                    Start-Sleep -Seconds 1
+                    $Exit = "Exit"
 
                     Write-Host "" #Spacer to keep details readable.
                 }
@@ -224,13 +170,21 @@ do
 until($Exit -ceq "Exit")
 
 ####################################################################################################################################################################################
-#Launch menu for pre-operation review.
+#Run initial query to pull number of files and folders identified for reset.
+$QueryItems = Get-PnPListItem -List $ListName | Measure-Object | Select-Object -ExpandProperty Count
+
+# Output the number of items returned
+Write-Host "Number of items to be processed:" $QueryItems
+
+#Prompt operator to press a key to continue.
+Write-Host "Press Enter to continue ..."
+$null = Read-Host
 
 do
 {
     Write-Host "Enter a selection:"
     Write-Host ""
-    Write-Host "1. Execute a CAML query to get the target location file count. (Fast)"
+    Write-Host "1. Re-run query to get the target location file count."
     Write-Host "2. Execute resets!"
     Write-Host "3. Exit script."
 
@@ -240,31 +194,10 @@ do
         {
             '1'
             {
-                # CAML Query to filter files and folders
-                $camlQuery = "<View>
-                                <Query>
-                                    <Where>
-                                        <Or>
-                                            <Eq>
-                                                <FieldRef Name='FSObjType'/><Value Type='Integer'>0</Value>
-                                            </Eq>
-
-                                            <Eq>
-                                                <FieldRef Name='FSObjType'/><Value Type='Integer'>1</Value>
-                                            </Eq>
-                                        </Or>
-                                    </Where>
-                                </Query>
-                                <RowLimit>
-                                    0
-                                </RowLimit>
-                            </View>"
-
-                # Execute the query
-                $items = Get-PnPListItem -List $ListName -Query $camlQuery
+                $QueryItems = Get-PnPListItem -List $ListName | Measure-Object | Select-Object -ExpandProperty Count
 
                 # Output the number of items returned
-                Write-Host "Number of items in : $($items.Count)"    
+                Write-Host "Number of items:" $QueryItems
             }
         
             '3'
@@ -276,9 +209,7 @@ do
 
 until($PreExecution -eq 2)
 ####################################################################################################################################################################################
-
 #If operator proceeds, define data classes and process changes.
-
 class InheritanceChange
 {
     [int]    $Index 
@@ -291,126 +222,124 @@ class InheritanceChange
 }
 
 $LoggingIndex = @() #Define data index to store changes for later output to log CSV file.
-[Int]$ProcessingCounter = 0 #Initialize counter for change indexing in output file and progress bar.
+[Int]$ProcessingCounter = 1 #Initialize counter for overall operational progress.
+[Int]$LoggingCounter = 0 #Initialize a counter specifically for outputting log files at the operator specified number of entries configured per file.
 $ProcessingDate = Get-Date -Format "MM/dd/yyyy" #Pre-assigned to get date once instead of potentially hundreds/thousands of times over.
-$LoggingPathFull = $LoggingPath += $LoggingFileName
 
-do 
+####################################################################################################################################################################################
+#Process changes.
+
+$ProcessingIndex = Get-PnPListItem -List $ListName -PageSize 500 | Where {$_.FileSystemObjectType -eq "File" -or $_.FileSystemObjectType -eq "Folder"}
+
+foreach ($ProcessingItem in $ProcessingIndex) 
     {
-        $ProcessingIndex = Get-PnPListItem -List $ListName -PageSize 500 | Where {$_.FileSystemObjectType -eq "File" -or $_.FileSystemObjectType -eq "Folder"}
-
-        foreach ($ProcessingItem in $ProcessingIndex) 
+        try
             {
-                try
-                    {
-                        #Load the item and confirm up to date information.
-                        $Context.Load($ProcessingItem) 
-                        $Context.ExecuteQuery()
+                $PercentComplete = ($ProcessingCounter/$QueryItems) * 100
+                Write-Progress -Activity "Resetting library inheritance..." -Status "$ProcessingCounter out of $QueryItems completed." -PercentComplete $PercentComplete
+
+                #Load the item and confirm up to date information.
+                $Context.Load($ProcessingItem) 
+                $Context.ExecuteQuery()
             
-                        #Process the inheritance reset.
-                        $ProcessingItem.ResetRoleInheritance(); #Command to prime item inheritance reset.
-                        $Context.ExecuteQuery() #Command to execute item inheritance reset.
+                #Process the inheritance reset.
+                $ProcessingItem.ResetRoleInheritance(); #Prime item inheritance reset.
+                $Context.ExecuteQuery() #Execute item inheritance reset.
 
-                        $CurrentItemName = $ProcessingItem.FieldValues.FileLeafRef #Used to output name of item to let the operator know it was processed.
-                        Write-Host ""
-                        Write-Host -ForegroundColor Green "$CurrentItemName Role inheritance reset"
+                #Write to screen that item inheritance was reset successfully. 
+                Write-Host -ForegroundColor Green $ProcessingItem.FieldValues.FileLeafRef " role inheritance reset."
 
-                        $ResetCheck = $true #Sets variable for output if successful.
-                    }
+                $ResetCheck = $true #Sets variable for output if successful.
+            }
 
-                        catch #Error handling.
-                        {
-                            Write-Host -ForegroundColor Red "Error recorded for the resetting the role inheritance of $CurrentItemName" ":" $_
-                            $XError = "$_"
+                catch #Error handling.
+                {
+                    Write-Host -ForegroundColor Red "Error recorded for the resetting the role inheritance of $CurrentItemName" ":" $_
+                    $XError = "$_"
 
-                            $ResetCheck = $false #Sets variable for output if reset fails.
-                        }
+                    $ResetCheck = $false #Sets variable for output if reset fails.
+                }
 
-                if ($LoggingFileName -ne $null)
-                    {
-                        #Write data to instantiated class object for temporary storage and file output.
-                        $DataTable = New-Object -TypeName InheritanceChange -Property $([Ordered]@{
+        #If the operator set parameters for logging, record data and output to CSV in batches.
+        if ($LoggingFileName -ne $null)
+            {
+                #Write data to instantiated class object for temporary storage and file output.
+                $DataTable = New-Object -TypeName InheritanceChange -Property $([Ordered]@{
         
-                        Index = $ProcessingCounter + 1
-                        Date = $ProcessingDate
-                        Time = Get-Date -Format "HH:mm"
-                        FileName = $CurrentItemName
-                        Location = $ProcessingItem.FieldValues.FileDirRef
-                        Inheritance_Reset = $ResetCheck
-                        Errors = $XError
-                        })
+                Index = $ProcessingCounter + 1
+                Date = $ProcessingDate
+                Time = Get-Date -Format "HH:mm"
+                FileName = $ProcessingItem.FieldValues.FileLeafRef
+                Location = $ProcessingItem.FieldValues.FileDirRef
+                Inheritance_Reset = $ResetCheck
+                Errors = $XError
+                })
 
-                        #Send the data table to the index.
-                        $LoggingIndex += $DataTable
+                #Send the data table to the index.
+                $LoggingIndex += $DataTable
 
-                        #If the index has processed the selected amount of items, output to file and clear for next file.
-                        if ($ProcessingCounter -ge $LoggingCount)
+                #If the index has processed the selected amount of items, output to file and clear for next file.
+                if ($LoggingCounter -ge $LoggingCount)
+                    {
+                        Write-Host -ForegroundColor Green "Outputting current data to file..."
+
+                        #Try to save the current data to file under the selected location.
+                        try
                             {
-                                Write-Host -ForegroundColor Green "Outputting current data to file..."
-
-                                #Try to save the current data to file under the selected location.
-                                try
-                                    {
-                                        Export-Csv -InputObject $LoggingIndex -Path $LoggingPathFull -NoClobber
-                                    }
-                                    
-                                    #If saving fails, most commonly due to file name errors, rename the file and output again using the time to avoid duplicates a second time.
-                                    catch
-                                        {
-                                            $Time = Get-Date -Format "mm"
-                                            $LoggingPathMod = $LoggingPathFull += $Time += "_Mod"
-
-                                            Export-Csv -InputObject $LoggingIndex -Path $LoggingPathMod -NoClobber
-
-                                            $ProcessingCounter = '0'
-                                            $LoggingIndex = $null
-                                        }
+                                $Time = Get-Date -Format "HH mm"
+                                $Path = $LoggingPath += $LoggingFileName += ".csv"
+                                $LoggingIndex | Export-Csv -Path $Path -NoClobber
                             }
+                                    
+                            #If saving fails, most commonly due to file name errors, rename the file and output again using the time to avoid duplicates a second time.
+                            catch
+                                {
+                                    $Time = Get-Date -Format "HH mm"
+                                    $Path = $LoggingPath += $LoggingFileName += $Time += "_Mod.csv"
 
-                        #Clear variables for next use to ensure no duplicate values from previous items are used.
-                        $DataTable = $null
-                        $CurrentItemName = $null
-                        $ResetCheck = $null
-                        $XError = $null
+                                    $LoggingIndex | Export-Csv -Path $Path -NoClobber
+
+                                    $LoggingCounter = 0
+                                    $LoggingIndex = $null
+                                }
                     }
+
+                    #Clear variables for next use to ensure no duplicate values from previous items are used.
+                    $DataTable = $null
+                    $CurrentItemName = $null
+                    $ResetCheck = $null
+                    $XError = $null
             }
 
         #Increment counter for progress bar, indexing and operational processing.
         $ProcessingCounter++
     }
-until($ProcessingIndex -eq $null)
 
-    #Output remaining data to file.
-                if ($LoggingFileName -ne $null)
+#Output remaining data to file.
+if ($LoggingFileName -ne $null)
+    {
+        #If the index has processed the selected amount of items, output to file and clear for next file.
+                Write-Host -ForegroundColor Green "Outputting remaining data to file..."
+
+                #Try to save the current data to file under the selected location.
+                try
                     {
-
-                        #If the index has processed the selected amount of items, output to file and clear for next file.
-                                Write-Host -ForegroundColor Green "Outputting remaining data to file..."
-
-                                #Try to save the current data to file under the selected location.
-                                try
-                                    {
-                                        Export-Csv -InputObject $LoggingIndex -Path $LoggingPathFull -NoClobber
-                                    }
-                                    
-                                    #If saving fails, most commonly due to file name errors, rename the file and output again using the time to avoid duplicates a second time.
-                                    catch
-                                        {
-                                            $Time = Get-Date -Format "mm"
-                                            $LoggingPathMod = $LoggingPathFull += $Time += "_Mod"
-
-                                            Export-Csv -InputObject $LoggingIndex -Path $LoggingPathMod -NoClobber
-
-                                            $ProcessingCounter = '0'
-                                            $LoggingIndex = $null
-                                        }
-
-                        #Clear variables for next use to ensure no duplicate values from previous items are used.
-                        $DataTable = $null
-                        $CurrentItemName = $null
-                        $ResetCheck = $null
-                        $XError = $null
+                        $Time = Get-Date -Format "HH mm"
+                        $Path = $LoggingPath += $LoggingFileName += $Time += ".csv"
+                        $LoggingIndex | Export-Csv -Path $Path -NoClobber
                     }
+                                    
+                    #If saving fails, most commonly due to file name errors, rename the file and output again using the time to avoid duplicates a second time.
+                    catch
+                        {
+                            $Time = Get-Date -Format "HH mm"
+                            $Path = $LoggingPath += $LoggingFileName += $Time += "_Mod.csv"
+
+                            $LoggingIndex | Export-Csv -Path $Path -NoClobber
+
+                            $LoggingIndex = $null
+                        }
+    }
 
 ####################################################################################################################################################################################
 #Cleanup memory.
@@ -420,4 +349,3 @@ $ProcessingIndex = $null
 ####################################################################################################################################################################################
 
 Write-Host -ForegroundColor Green "Script has completed all operations! Have a wonderful day! :)"
-

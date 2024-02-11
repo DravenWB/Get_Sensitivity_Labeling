@@ -38,4 +38,3 @@ This script is designed to reset the inheritance of items within a specific fold
 - [Installing PowerShell on Windows - PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows?view=powershell-7.4#installing-the-msi-package)
 - [About Classes - PowerShell | Microsoft Learn](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_classes?view=powershell-7.4)
 - [Everything You Wanted to Know About Exceptions - PowerShell | Microsoft Learn](https://learn.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-exceptions?view=powershell-7.4)
-- [Query Schema in CAML | Microsoft Learn](https://learn.microsoft.com/en-us/sharepoint/dev/schema/query-schema)

@@ -289,6 +289,9 @@ foreach ($ProcessingItem in $ProcessingIndex)
                                 $Time = Get-Date -Format "HH mm"
                                 $Path = $LoggingPath += $LoggingFileName += ".csv"
                                 $LoggingIndex | Export-Csv -Path $Path -NoClobber
+
+                                $LoggingCounter = 0
+                                $LoggingIndex = $null
                             }
                                     
                             #If saving fails, most commonly due to file name errors, rename the file and output again using the time to avoid duplicates a second time.

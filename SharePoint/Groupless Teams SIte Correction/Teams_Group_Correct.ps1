@@ -32,7 +32,7 @@ Start-Sleep -Seconds 1
 
 $InstalledVersion = ($PSVersionTable.PSVersion).ToString()
 
-if ($InstalledVersion -ge '5')
+if ($InstalledVersion -ge '5.2')
     {
         Write-Host -ForegroundColor Green "Success! PowerShell version $InstalledVersion running."
         Start-Sleep -Seconds 1
@@ -40,8 +40,8 @@ if ($InstalledVersion -ge '5')
         else
             {
                 Write-Host -ForegroundColor Red "The currently running PowerShell version is $InstalledVersion."
-                Write-Host -ForegroundColor Red "This PowerShell script requires PowerShell version 7 or greater."
-                Write-Host -ForegroundColor Red "Please run in PowerShell 5 or greater and try again."
+                Write-Host -ForegroundColor Red "This PowerShell script requires PowerShell version 5.2 or greater."
+                Write-Host -ForegroundColor Red "Please run in PowerShell 5.2 or greater and try again."
                 Start-Sleep -Seconds 3
                 Exit
             }
